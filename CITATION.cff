@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: pySSMF
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Youssra
+    family-names: Anene
+    # orcid: 'https://orcid.org/xxxx-xxxx-xxxx-xxxx'
+    affiliation: 'CY Cergy Paris University, France'
+  - given-names: José M.
+    family-names: Pizarro
+    orcid: 'https://orcid.org/0000-0002-6751-8192'
+    affiliation: 'Federal Institute for Materials Research and Testing (BAM), Germany'
+  - given-names: Lorenzo
+    family-names: Fratino
+    orcid: 'https://orcid.org/0000-0003-1288-2859'
+    affiliation: 'CY Cergy Paris University, France'
+# doi: <add when published>
+repository-code: 'https://github.com/Yanene/pySSMF'
+# url: <add url to PyPI when published>
+license: MIT
+abstract: >-
+  pySSMF is a Python package to simulate electronic properties of strongly correlated
+  electronic systems using the Slave-Spin Mean-Field (SSMF) method. It provides a
+  user-friendly interface to perform SSMF calculations, making it accessible to a wide
+  range of researchers in the field of condensed matter physics. 
