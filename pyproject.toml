@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+classifiers = [
+  "Natural Language :: English",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+name = "pyssmf"
+description = "A Python package to run Slave-Spin Mean-Field (SSMF) simulations in strongly correlated electron systems."
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+  { name = "Youssra Anene", email = "youssraanene20@gmail.com" },
+  { name = "Jose M. Pizarro", email = "jose.pizarro-blanco@bam.de" },
+  { name = "Lorenzo Fratino" },
+]
+maintainers = [
+  { name = "Youssra Anene", email = "youssraanene20@gmail.com" },
+  { name = "Jose M. Pizarro", email = "jose.pizarro-blanco@bam.de" },
+]
+license = { file = "LICENSE" }
+dependencies = [
+  "pydantic~=2.10.5",
+  "h5py~=3.12.1",
+  "structlog==24.4.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Yanene/pySSMF"
+"Bug Tracker" = "https://github.com/Yanene/pySSMF/issues"
+"Documentation" = "https://yanene.github.io/pySSMF/"
+
+[project.optional-dependencies]
+dev = [
+  "mypy==1.0.1",
+  "ruff",
+  "pytest",
+  "pytest-timeout",
+  "pytest-cov",
+  "pre-commit",
+  "detect-secrets",
+]
+docu = [
+  "mkdocs-material",
+  "mkdocs-click",
+  "mkdocstrings",
+  "mkdocstrings-python",
+]
+
+[tool.uv]
+build-constraint-dependencies = ["wheel<0.46"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+write_to = "src/pyssmf/_version.py"
