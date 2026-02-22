@@ -118,3 +118,20 @@ uv add --docu <package>
 uv lock 
 uv sync 
 ```
+
+#### Troubleshooting: _uv is not found after installation_
+
+On some systems (e.g. zsh), `uv` is installed in `~/.local/bin`, which may not be in your `PATH`.
+
+If running `uv` gives `command not found`, add it manually:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+And then, verify:
+
+```bash
+uv --version
+```
