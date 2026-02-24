@@ -18,7 +18,20 @@ env:
   UV_SYSTEM_PYTHON: true
 
 jobs:
+  pre-commit:
+    name: Pre-commit (lint/format/policy/secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
   install-and-test:
+    needs: pre-commit
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -44,6 +57,7 @@ jobs:
       run: |
         python -m pytest -sv --ignore=tests/cli --ignore=tests/metadata/test_entities_dict.py tests
   build-and-install:
+    needs: pre-commit
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -61,15 +75,3 @@ jobs:
     - name: Install the package
       run: |
         uv pip install dist/*.tar.gz
-  pre-commit:
-    name: Pre-commit (lint/format/policy/secrets)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-      - uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
