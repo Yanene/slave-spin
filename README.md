@@ -115,8 +115,54 @@ uv run pytest tests
 uv add <package>
 uv add --dev <package>
 uv add --docu <package>
-uv lock 
-uv sync 
+uv lock
+uv sync
+```
+
+### Run the tests
+
+You can locally run the tests by doing:
+
+```sh
+python -m pytest -sv tests
+```
+
+where the `-s` and `-v` options toggle the output verbosity.
+
+You can also generate a local coverage report:
+
+```sh
+python -m pytest --cov=src tests
+```
+
+### Run auto-formatting and linting
+
+We use [Ruff](https://docs.astral.sh/ruff/) for formatting and linting the code following the rules specified in the `pyproject.toml`. You can run locally:
+
+```sh
+ruff check .
+```
+
+This will produce an output with the specific issues found. In order to auto-fix them, run:
+
+```sh
+ruff format .
+```
+
+If some issues are not possible to fix automatically, you will need to visit the file and fix them by hand.
+
+### Pre-commit hooks (recommended)
+
+We use `pre-commit` to run fast checks automatically on every commit (formatting, linting, secrets scanning, and a repository-specific policy check):
+
+```sh
+pre-commit install
+```
+
+(Optional) Run on the whole repo:
+
+```sh
+pre-commit run --all-files
 ```
 
 #### Troubleshooting: _uv is not found after installation_

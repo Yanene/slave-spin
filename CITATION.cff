@@ -25,4 +25,4 @@ abstract: >-
   pySSMF is a Python package to simulate electronic properties of strongly correlated
   electronic systems using the Slave-Spin Mean-Field (SSMF) method. It provides a
   user-friendly interface to perform SSMF calculations, making it accessible to a wide
-  range of researchers in the field of condensed matter physics. 
+  range of researchers in the field of condensed matter physics.
