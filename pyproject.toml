@@ -27,7 +27,10 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 dependencies = [
+  "numpy",
+  "scipy",
   "pydantic~=2.10.5",
+  "pyyaml",
   "h5py~=3.12.1",
   "structlog==24.4.0",
 ]
