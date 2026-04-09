@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
-from typing import Callable
 
 import numpy as np
 import scipy.linalg
@@ -29,7 +29,9 @@ class RunResult:
 
     def write(self, destination: str | Path | None = None) -> Path:
         """Persist the numerical table to disk and return the written path."""
-        target = Path(destination or self.config.output_path or default_output_name(self.config))
+        target = Path(
+            destination or self.config.output_path or default_output_name(self.config)
+        )
         target.parent.mkdir(parents=True, exist_ok=True)
         header = "# " + " ".join(self.headers)
         np.savetxt(target, self.rows, header=header, comments="")
@@ -70,7 +72,9 @@ def bethe_density_of_states(epsilon: np.ndarray, hopping: float) -> np.ndarray:
 def estimate_gauge(density: float) -> float:
     """Estimate the gauge factor used in the slave-spin operators."""
     clipped_density = float(np.clip(density, GAUGE_EPSILON, 1.0 - GAUGE_EPSILON))
-    return (1.0 / np.sqrt(clipped_density * (1.0 - clipped_density) + GAUGE_EPSILON)) - 1.0
+    return (
+        1.0 / np.sqrt(clipped_density * (1.0 - clipped_density) + GAUGE_EPSILON)
+    ) - 1.0
 
 
 def btest(state: int, index: int) -> int:
@@ -130,7 +134,9 @@ class ParamagneticSolver:
         self.dos = bethe_density_of_states(self.epsilon, config.hopping)
         self.orbitals = config.orbitals
 
-    def fermionic_occupation(self, z_value: float, mu: float, lambda_value: float) -> float:
+    def fermionic_occupation(
+        self, z_value: float, mu: float, lambda_value: float
+    ) -> float:
         """Compute the occupation for one paramagnetic orbital."""
         energies = z_value * self.epsilon - mu - lambda_value
         integrand = self.dos * fermi_distribution(energies, self.config.beta)
@@ -139,7 +145,9 @@ class ParamagneticSolver:
     def calculate_h(self, mu: float, lambda_value: float, z_value: float) -> float:
         """Compute the renormalized kinetic field for one orbital."""
         energies = z_value * self.epsilon - mu - lambda_value
-        integrand = self.dos * self.epsilon * fermi_distribution(energies, self.config.beta)
+        integrand = (
+            self.dos * self.epsilon * fermi_distribution(energies, self.config.beta)
+        )
         return float(np.sqrt(z_value) * simpson(integrand, x=self.epsilon))
 
     def slave_hamiltonian(
@@ -158,8 +166,12 @@ class ParamagneticSolver:
     ) -> np.ndarray:
         """Construct the paramagnetic slave-spin Hamiltonian."""
         matrix = np.zeros((4**self.orbitals, 4**self.orbitals), dtype=np.complex128)
-        matrix += lambda1 * (spin_z_operator(self.orbitals, 0) + spin_z_operator(self.orbitals, 1))
-        matrix += lambda2 * (spin_z_operator(self.orbitals, 2) + spin_z_operator(self.orbitals, 3))
+        matrix += lambda1 * (
+            spin_z_operator(self.orbitals, 0) + spin_z_operator(self.orbitals, 1)
+        )
+        matrix += lambda2 * (
+            spin_z_operator(self.orbitals, 2) + spin_z_operator(self.orbitals, 3)
+        )
         matrix += h1_down * spin_flip_dagger(self.orbitals, 0, gauge1_down)
         matrix += h1_up * spin_flip_dagger(self.orbitals, 1, gauge1_up)
         matrix += np.conj(h1_down) * spin_flip_operator(self.orbitals, 0, gauge1_down)
@@ -184,9 +196,15 @@ class ParamagneticSolver:
             x_value, y_value = vector
             gradient = np.array(
                 [
-                    (function(x_value + GRADIENT_STEP, y_value) - function(x_value - GRADIENT_STEP, y_value))
+                    (
+                        function(x_value + GRADIENT_STEP, y_value)
+                        - function(x_value - GRADIENT_STEP, y_value)
+                    )
                     / (2.0 * GRADIENT_STEP),
-                    (function(x_value, y_value + GRADIENT_STEP) - function(x_value, y_value - GRADIENT_STEP))
+                    (
+                        function(x_value, y_value + GRADIENT_STEP)
+                        - function(x_value, y_value - GRADIENT_STEP)
+                    )
                     / (2.0 * GRADIENT_STEP),
                 ]
             )
@@ -231,10 +249,30 @@ class ParamagneticSolver:
                     gauge2_down,
                 )
             )
-            spin_occ_1_up = average_ground_state_value(spin_z_operator(self.orbitals, 1), evecs, evals) + 0.5
-            spin_occ_1_down = average_ground_state_value(spin_z_operator(self.orbitals, 0), evecs, evals) + 0.5
-            spin_occ_2_up = average_ground_state_value(spin_z_operator(self.orbitals, 3), evecs, evals) + 0.5
-            spin_occ_2_down = average_ground_state_value(spin_z_operator(self.orbitals, 2), evecs, evals) + 0.5
+            spin_occ_1_up = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 1), evecs, evals
+                )
+                + 0.5
+            )
+            spin_occ_1_down = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 0), evecs, evals
+                )
+                + 0.5
+            )
+            spin_occ_2_up = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 3), evecs, evals
+                )
+                + 0.5
+            )
+            spin_occ_2_down = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 2), evecs, evals
+                )
+                + 0.5
+            )
             return (
                 (spin_occ_1_up - occupation_1_up) ** 2
                 + (spin_occ_1_down - occupation_1_down) ** 2
@@ -246,30 +284,44 @@ class ParamagneticSolver:
         return float(result[0]), float(result[1])
 
     def density_derivative(
-        self, mu_new: float, mu_old: float, lambda1: float, lambda2: float, z1: float, z2: float
+        self,
+        mu_new: float,
+        mu_old: float,
+        lambda1: float,
+        lambda2: float,
+        z1: float,
+        z2: float,
     ) -> float:
         """Estimate `dn/dmu` for the next chemical potential update."""
-        n_new = 2.0 * self.fermionic_occupation(z1, mu_new, lambda1) + 2.0 * self.fermionic_occupation(
-            z2, mu_new, lambda2
-        )
-        n_old = 2.0 * self.fermionic_occupation(z1, mu_old, lambda1) + 2.0 * self.fermionic_occupation(
-            z2, mu_old, lambda2
-        )
+        n_new = 2.0 * self.fermionic_occupation(
+            z1, mu_new, lambda1
+        ) + 2.0 * self.fermionic_occupation(z2, mu_new, lambda2)
+        n_old = 2.0 * self.fermionic_occupation(
+            z1, mu_old, lambda1
+        ) + 2.0 * self.fermionic_occupation(z2, mu_old, lambda2)
         if mu_new == mu_old:
             return 0.0
         density = (n_new - n_old) / (mu_new - mu_old)
         return max(0.1, density) if density > 0 else min(-0.1, density)
 
     def find_mu(
-        self, mu_guess: float, lambda1: float, lambda2: float, z1: float, z2: float, derivative: float
+        self,
+        mu_guess: float,
+        lambda1: float,
+        lambda2: float,
+        z1: float,
+        z2: float,
+        derivative: float,
     ) -> float:
         """Update the chemical potential using the legacy secant-style correction."""
-        occupation = 2.0 * self.fermionic_occupation(z1, mu_guess, lambda1) + 2.0 * self.fermionic_occupation(
-            z2, mu_guess, lambda2
-        )
+        occupation = 2.0 * self.fermionic_occupation(
+            z1, mu_guess, lambda1
+        ) + 2.0 * self.fermionic_occupation(z2, mu_guess, lambda2)
         if derivative == 0:
             return mu_guess
-        return float(mu_guess - (occupation - self.config.target_occupation) / derivative)
+        return float(
+            mu_guess - (occupation - self.config.target_occupation) / derivative
+        )
 
     def solve(self) -> tuple[list[str], np.ndarray]:
         """Run the full interaction sweep for the paramagnetic case."""
@@ -287,9 +339,13 @@ class ParamagneticSolver:
         for u_value in make_u_values(self.config):
             for _ in range(self.config.max_iterations):
                 f1_up = self.fermionic_occupation(z1_up_guess, mu_guess, lambda1_guess)
-                f1_down = self.fermionic_occupation(z1_down_guess, mu_guess, lambda1_guess)
+                f1_down = self.fermionic_occupation(
+                    z1_down_guess, mu_guess, lambda1_guess
+                )
                 f2_up = self.fermionic_occupation(z2_up_guess, mu_guess, lambda2_guess)
-                f2_down = self.fermionic_occupation(z2_down_guess, mu_guess, lambda2_guess)
+                f2_down = self.fermionic_occupation(
+                    z2_down_guess, mu_guess, lambda2_guess
+                )
                 gauge1_up = estimate_gauge(f1_up)
                 gauge1_down = estimate_gauge(f1_down)
                 gauge2_up = estimate_gauge(f2_up)
@@ -331,21 +387,49 @@ class ParamagneticSolver:
                     )
                 )
                 z1_up_new = quasiparticle_weight(
-                    average_ground_state_value(spin_flip_operator(self.orbitals, 1, gauge1_up), evecs, evals)
+                    average_ground_state_value(
+                        spin_flip_operator(self.orbitals, 1, gauge1_up), evecs, evals
+                    )
                 )
                 z1_down_new = quasiparticle_weight(
-                    average_ground_state_value(spin_flip_operator(self.orbitals, 0, gauge1_down), evecs, evals)
+                    average_ground_state_value(
+                        spin_flip_operator(self.orbitals, 0, gauge1_down), evecs, evals
+                    )
                 )
                 z2_up_new = quasiparticle_weight(
-                    average_ground_state_value(spin_flip_operator(self.orbitals, 3, gauge2_up), evecs, evals)
+                    average_ground_state_value(
+                        spin_flip_operator(self.orbitals, 3, gauge2_up), evecs, evals
+                    )
                 )
                 z2_down_new = quasiparticle_weight(
-                    average_ground_state_value(spin_flip_operator(self.orbitals, 2, gauge2_down), evecs, evals)
+                    average_ground_state_value(
+                        spin_flip_operator(self.orbitals, 2, gauge2_down), evecs, evals
+                    )
                 )
-                spin_occ_1_up = average_ground_state_value(spin_z_operator(self.orbitals, 1), evecs, evals) + 0.5
-                spin_occ_1_down = average_ground_state_value(spin_z_operator(self.orbitals, 0), evecs, evals) + 0.5
-                spin_occ_2_up = average_ground_state_value(spin_z_operator(self.orbitals, 3), evecs, evals) + 0.5
-                spin_occ_2_down = average_ground_state_value(spin_z_operator(self.orbitals, 2), evecs, evals) + 0.5
+                spin_occ_1_up = (
+                    average_ground_state_value(
+                        spin_z_operator(self.orbitals, 1), evecs, evals
+                    )
+                    + 0.5
+                )
+                spin_occ_1_down = (
+                    average_ground_state_value(
+                        spin_z_operator(self.orbitals, 0), evecs, evals
+                    )
+                    + 0.5
+                )
+                spin_occ_2_up = (
+                    average_ground_state_value(
+                        spin_z_operator(self.orbitals, 3), evecs, evals
+                    )
+                    + 0.5
+                )
+                spin_occ_2_down = (
+                    average_ground_state_value(
+                        spin_z_operator(self.orbitals, 2), evecs, evals
+                    )
+                    + 0.5
+                )
                 mu_new = self.find_mu(
                     mu_guess,
                     lambda1_new,
@@ -376,7 +460,8 @@ class ParamagneticSolver:
                     and abs(h2_up_new - h2_up_guess) < self.config.tolerance
                     and abs(h2_down_new - h2_down_guess) < self.config.tolerance
                     and abs(mu_new - mu_guess) < self.config.tolerance
-                    and abs(self.config.target_occupation - total_f) < self.config.tolerance
+                    and abs(self.config.target_occupation - total_f)
+                    < self.config.tolerance
                     and abs(spin_occ_1_up - spin_1_up_old) < self.config.tolerance
                     and abs(spin_occ_1_down - spin_1_down_old) < self.config.tolerance
                     and abs(spin_occ_2_up - spin_2_up_old) < self.config.tolerance
@@ -407,9 +492,13 @@ class ParamagneticSolver:
                 h2_up_guess = alpha * h2_up_new + (1.0 - alpha) * h2_up_guess
                 h2_down_guess = alpha * h2_down_new + (1.0 - alpha) * h2_down_guess
                 spin_1_up_old = alpha * spin_occ_1_up + (1.0 - alpha) * spin_1_up_old
-                spin_1_down_old = alpha * spin_occ_1_down + (1.0 - alpha) * spin_1_down_old
+                spin_1_down_old = (
+                    alpha * spin_occ_1_down + (1.0 - alpha) * spin_1_down_old
+                )
                 spin_2_up_old = alpha * spin_occ_2_up + (1.0 - alpha) * spin_2_up_old
-                spin_2_down_old = alpha * spin_occ_2_down + (1.0 - alpha) * spin_2_down_old
+                spin_2_down_old = (
+                    alpha * spin_occ_2_down + (1.0 - alpha) * spin_2_down_old
+                )
                 lambda1_guess = alpha * lambda1_new + (1.0 - alpha) * lambda1_guess
                 lambda2_guess = alpha * lambda2_new + (1.0 - alpha) * lambda2_guess
                 z1_up_guess = alpha * z1_up_new + (1.0 - alpha) * z1_up_guess
@@ -419,9 +508,24 @@ class ParamagneticSolver:
                 mu_guess = alpha * mu_new + (1.0 - alpha) * mu_guess
                 dens_guess = alpha * dens_new + (1.0 - alpha) * dens_guess
             else:
-                raise RuntimeError(f"Paramagnetic solver did not converge for U={u_value}.")
+                raise RuntimeError(
+                    f"Paramagnetic solver did not converge for U={u_value}."
+                )
 
-        headers = ["U", "mu", "Z_1", "Z_2", "lamda_1", "lamda_2", "h_1", "h_2", "n_f_1", "n_f_2", "n_s_1", "n_s_2"]
+        headers = [
+            "U",
+            "mu",
+            "Z_1",
+            "Z_2",
+            "lamda_1",
+            "lamda_2",
+            "h_1",
+            "h_2",
+            "n_f_1",
+            "n_f_2",
+            "n_s_1",
+            "n_s_2",
+        ]
         return headers, np.array(rows, dtype=float)
 
 
@@ -435,7 +539,12 @@ class AntiferromagneticSolver:
         self.orbitals = config.orbitals
 
     def lambda_plus(
-        self, epsilon: np.ndarray, lambda_up: float, lambda_down: float, z_up: float, z_down: float
+        self,
+        epsilon: np.ndarray,
+        lambda_up: float,
+        lambda_down: float,
+        z_up: float,
+        z_down: float,
     ) -> np.ndarray:
         """Upper fermionic band of the AF effective Hamiltonian."""
         return (
@@ -444,7 +553,12 @@ class AntiferromagneticSolver:
         ) / 2.0
 
     def lambda_minus(
-        self, epsilon: np.ndarray, lambda_up: float, lambda_down: float, z_up: float, z_down: float
+        self,
+        epsilon: np.ndarray,
+        lambda_up: float,
+        lambda_down: float,
+        z_up: float,
+        z_down: float,
     ) -> np.ndarray:
         """Lower fermionic band of the AF effective Hamiltonian."""
         return (
@@ -453,98 +567,187 @@ class AntiferromagneticSolver:
         ) / 2.0
 
     def alpha_minus(
-        self, z_up: float, z_down: float, epsilon: np.ndarray, lambda_up: float, lambda_down: float
+        self,
+        z_up: float,
+        z_down: float,
+        epsilon: np.ndarray,
+        lambda_up: float,
+        lambda_down: float,
     ) -> np.ndarray:
         """Eigenvector coefficient for the lower AF fermionic band."""
         lambda_minus = self.lambda_minus(epsilon, lambda_up, lambda_down, z_up, z_down)
         numerator = np.sqrt(z_up * z_down) * epsilon * lambda_minus
         denominator = np.sqrt(
             z_up * z_down * epsilon**2 * lambda_minus**2
-            + (z_up * z_down * epsilon**2 - lambda_down * lambda_minus - lambda_up * lambda_down) ** 2
+            + (
+                z_up * z_down * epsilon**2
+                - lambda_down * lambda_minus
+                - lambda_up * lambda_down
+            )
+            ** 2
         )
         return numerator / denominator
 
     def beta_minus(
-        self, z_up: float, z_down: float, epsilon: np.ndarray, lambda_up: float, lambda_down: float
+        self,
+        z_up: float,
+        z_down: float,
+        epsilon: np.ndarray,
+        lambda_up: float,
+        lambda_down: float,
     ) -> np.ndarray:
         """Companion eigenvector coefficient for the lower AF fermionic band."""
         lambda_minus = self.lambda_minus(epsilon, lambda_up, lambda_down, z_up, z_down)
-        numerator = z_up * z_down * epsilon**2 - lambda_down * lambda_minus - lambda_up * lambda_down
+        numerator = (
+            z_up * z_down * epsilon**2
+            - lambda_down * lambda_minus
+            - lambda_up * lambda_down
+        )
         denominator = np.sqrt(
             z_up * z_down * epsilon**2 * lambda_minus**2
-            + (z_up * z_down * epsilon**2 - lambda_down * lambda_minus - lambda_up * lambda_down) ** 2
+            + (
+                z_up * z_down * epsilon**2
+                - lambda_down * lambda_minus
+                - lambda_up * lambda_down
+            )
+            ** 2
         )
         return numerator / denominator
 
     def alpha_plus(
-        self, z_up: float, z_down: float, epsilon: np.ndarray, lambda_up: float, lambda_down: float
+        self,
+        z_up: float,
+        z_down: float,
+        epsilon: np.ndarray,
+        lambda_up: float,
+        lambda_down: float,
     ) -> np.ndarray:
         """Eigenvector coefficient for the upper AF fermionic band."""
         lambda_plus = self.lambda_plus(epsilon, lambda_up, lambda_down, z_up, z_down)
         numerator = np.sqrt(z_up * z_down) * epsilon * lambda_plus
         denominator = np.sqrt(
             z_up * z_down * epsilon**2 * lambda_plus**2
-            + (z_up * z_down * epsilon**2 - lambda_down * lambda_plus - lambda_up * lambda_down) ** 2
+            + (
+                z_up * z_down * epsilon**2
+                - lambda_down * lambda_plus
+                - lambda_up * lambda_down
+            )
+            ** 2
         )
         return numerator / denominator
 
     def beta_plus(
-        self, z_up: float, z_down: float, epsilon: np.ndarray, lambda_up: float, lambda_down: float
+        self,
+        z_up: float,
+        z_down: float,
+        epsilon: np.ndarray,
+        lambda_up: float,
+        lambda_down: float,
     ) -> np.ndarray:
         """Companion eigenvector coefficient for the upper AF fermionic band."""
         lambda_plus = self.lambda_plus(epsilon, lambda_up, lambda_down, z_up, z_down)
-        numerator = z_up * z_down * epsilon**2 - lambda_down * lambda_plus - lambda_up * lambda_down
+        numerator = (
+            z_up * z_down * epsilon**2
+            - lambda_down * lambda_plus
+            - lambda_up * lambda_down
+        )
         denominator = np.sqrt(
             z_up * z_down * epsilon**2 * lambda_plus**2
-            + (z_up * z_down * epsilon**2 - lambda_down * lambda_plus - lambda_up * lambda_down) ** 2
+            + (
+                z_up * z_down * epsilon**2
+                - lambda_down * lambda_plus
+                - lambda_up * lambda_down
+            )
+            ** 2
         )
         return numerator / denominator
 
     def fermionic_up(
-        self, lambda_up: float, lambda_down: float, z_up: float, z_down: float, mu: float
+        self,
+        lambda_up: float,
+        lambda_down: float,
+        z_up: float,
+        z_down: float,
+        mu: float,
     ) -> float:
         """Compute the spin-up fermionic occupation for one orbital."""
         alpha_plus = self.alpha_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         beta_plus = self.beta_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
-        alpha_minus = self.alpha_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
+        alpha_minus = self.alpha_minus(
+            z_up, z_down, self.epsilon, lambda_up, lambda_down
+        )
         beta_minus = self.beta_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         denominator = alpha_plus * beta_minus - alpha_minus * beta_plus
-        plus_term = self.dos * np.abs(beta_minus / denominator) ** 2 * fermi_distribution(
-            self.lambda_plus(self.epsilon, lambda_up, lambda_down, z_up, z_down) - mu,
-            self.config.beta,
+        plus_term = (
+            self.dos
+            * np.abs(beta_minus / denominator) ** 2
+            * fermi_distribution(
+                self.lambda_plus(self.epsilon, lambda_up, lambda_down, z_up, z_down)
+                - mu,
+                self.config.beta,
+            )
         )
-        minus_term = self.dos * np.abs(beta_plus / denominator) ** 2 * fermi_distribution(
-            self.lambda_minus(self.epsilon, lambda_up, lambda_down, z_up, z_down) - mu,
-            self.config.beta,
+        minus_term = (
+            self.dos
+            * np.abs(beta_plus / denominator) ** 2
+            * fermi_distribution(
+                self.lambda_minus(self.epsilon, lambda_up, lambda_down, z_up, z_down)
+                - mu,
+                self.config.beta,
+            )
         )
         return float(simpson(plus_term + minus_term, x=self.epsilon))
 
     def fermionic_down(
-        self, lambda_up: float, lambda_down: float, z_up: float, z_down: float, mu: float
+        self,
+        lambda_up: float,
+        lambda_down: float,
+        z_up: float,
+        z_down: float,
+        mu: float,
     ) -> float:
         """Compute the spin-down fermionic occupation for one orbital."""
         alpha_plus = self.alpha_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         beta_plus = self.beta_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
-        alpha_minus = self.alpha_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
+        alpha_minus = self.alpha_minus(
+            z_up, z_down, self.epsilon, lambda_up, lambda_down
+        )
         beta_minus = self.beta_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         denominator = beta_plus * alpha_minus - alpha_plus * beta_minus
-        plus_term = self.dos * np.abs(alpha_minus / denominator) ** 2 * fermi_distribution(
-            self.lambda_plus(self.epsilon, lambda_up, lambda_down, z_up, z_down) - mu,
-            self.config.beta,
+        plus_term = (
+            self.dos
+            * np.abs(alpha_minus / denominator) ** 2
+            * fermi_distribution(
+                self.lambda_plus(self.epsilon, lambda_up, lambda_down, z_up, z_down)
+                - mu,
+                self.config.beta,
+            )
         )
-        minus_term = self.dos * np.abs(alpha_plus / denominator) ** 2 * fermi_distribution(
-            self.lambda_minus(self.epsilon, lambda_up, lambda_down, z_up, z_down) - mu,
-            self.config.beta,
+        minus_term = (
+            self.dos
+            * np.abs(alpha_plus / denominator) ** 2
+            * fermi_distribution(
+                self.lambda_minus(self.epsilon, lambda_up, lambda_down, z_up, z_down)
+                - mu,
+                self.config.beta,
+            )
         )
         return float(simpson(plus_term + minus_term, x=self.epsilon))
 
     def calculate_h_up(
-        self, lambda_up: float, lambda_down: float, z_up: float, z_down: float, mu: float
+        self,
+        lambda_up: float,
+        lambda_down: float,
+        z_up: float,
+        z_down: float,
+        mu: float,
     ) -> float:
         """Compute the spin-up `h` field for one orbital."""
         alpha_plus = self.alpha_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         beta_plus = self.beta_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
-        alpha_minus = self.alpha_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
+        alpha_minus = self.alpha_minus(
+            z_up, z_down, self.epsilon, lambda_up, lambda_down
+        )
         beta_minus = self.beta_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         denominator = (alpha_plus * beta_minus - alpha_minus * beta_plus) ** 2
         fermion_difference = fermi_distribution(
@@ -554,16 +757,28 @@ class AntiferromagneticSolver:
             self.lambda_minus(self.epsilon, lambda_up, lambda_down, z_up, z_down) - mu,
             self.config.beta,
         )
-        integrand = self.dos * self.epsilon * ((alpha_plus * beta_plus) / denominator) * fermion_difference
+        integrand = (
+            self.dos
+            * self.epsilon
+            * ((alpha_plus * beta_plus) / denominator)
+            * fermion_difference
+        )
         return float(np.sqrt(z_down) * simpson(integrand, x=self.epsilon))
 
     def calculate_h_down(
-        self, lambda_up: float, lambda_down: float, z_up: float, z_down: float, mu: float
+        self,
+        lambda_up: float,
+        lambda_down: float,
+        z_up: float,
+        z_down: float,
+        mu: float,
     ) -> float:
         """Compute the spin-down `h` field for one orbital."""
         alpha_plus = self.alpha_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         beta_plus = self.beta_plus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
-        alpha_minus = self.alpha_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
+        alpha_minus = self.alpha_minus(
+            z_up, z_down, self.epsilon, lambda_up, lambda_down
+        )
         beta_minus = self.beta_minus(z_up, z_down, self.epsilon, lambda_up, lambda_down)
         denominator = (alpha_plus * beta_minus - alpha_minus * beta_plus) ** 2
         fermion_difference = fermi_distribution(
@@ -573,7 +788,12 @@ class AntiferromagneticSolver:
             self.lambda_minus(self.epsilon, lambda_up, lambda_down, z_up, z_down) - mu,
             self.config.beta,
         )
-        integrand = self.dos * self.epsilon * ((alpha_plus * beta_plus) / denominator) * fermion_difference
+        integrand = (
+            self.dos
+            * self.epsilon
+            * ((alpha_plus * beta_plus) / denominator)
+            * fermion_difference
+        )
         return float(np.sqrt(z_up) * simpson(integrand, x=self.epsilon))
 
     def slave_hamiltonian(
@@ -594,12 +814,24 @@ class AntiferromagneticSolver:
     ) -> np.ndarray:
         """Construct the AF slave-spin Hamiltonian for two orbitals."""
         matrix = np.zeros((4**self.orbitals, 4**self.orbitals), dtype=np.complex128)
-        matrix += lambda1_down * spin_z_operator(self.orbitals, 0) + lambda1_up * spin_z_operator(self.orbitals, 1)
-        matrix += lambda2_down * spin_z_operator(self.orbitals, 2) + lambda2_up * spin_z_operator(self.orbitals, 3)
-        matrix += h1_down * spin_flip_dagger(self.orbitals, 0, gauge1_down) + h1_up * spin_flip_dagger(self.orbitals, 1, gauge1_up)
-        matrix += np.conj(h1_down) * spin_flip_operator(self.orbitals, 0, gauge1_down) + np.conj(h1_up) * spin_flip_operator(self.orbitals, 1, gauge1_up)
-        matrix += h2_down * spin_flip_dagger(self.orbitals, 2, gauge2_down) + h2_up * spin_flip_dagger(self.orbitals, 3, gauge2_up)
-        matrix += np.conj(h2_down) * spin_flip_operator(self.orbitals, 2, gauge2_down) + np.conj(h2_up) * spin_flip_operator(self.orbitals, 3, gauge2_up)
+        matrix += lambda1_down * spin_z_operator(
+            self.orbitals, 0
+        ) + lambda1_up * spin_z_operator(self.orbitals, 1)
+        matrix += lambda2_down * spin_z_operator(
+            self.orbitals, 2
+        ) + lambda2_up * spin_z_operator(self.orbitals, 3)
+        matrix += h1_down * spin_flip_dagger(
+            self.orbitals, 0, gauge1_down
+        ) + h1_up * spin_flip_dagger(self.orbitals, 1, gauge1_up)
+        matrix += np.conj(h1_down) * spin_flip_operator(
+            self.orbitals, 0, gauge1_down
+        ) + np.conj(h1_up) * spin_flip_operator(self.orbitals, 1, gauge1_up)
+        matrix += h2_down * spin_flip_dagger(
+            self.orbitals, 2, gauge2_down
+        ) + h2_up * spin_flip_dagger(self.orbitals, 3, gauge2_up)
+        matrix += np.conj(h2_down) * spin_flip_operator(
+            self.orbitals, 2, gauge2_down
+        ) + np.conj(h2_up) * spin_flip_operator(self.orbitals, 3, gauge2_up)
         spin_1_up = spin_z_operator(self.orbitals, 1)
         spin_1_down = spin_z_operator(self.orbitals, 0)
         spin_2_up = spin_z_operator(self.orbitals, 3)
@@ -607,7 +839,9 @@ class AntiferromagneticSolver:
         matrix += u_value * (spin_1_up @ spin_1_down + spin_2_up @ spin_2_down)
         return matrix
 
-    def gradient_descent(self, function: Callable[[np.ndarray], float], start: np.ndarray) -> np.ndarray:
+    def gradient_descent(
+        self, function: Callable[[np.ndarray], float], start: np.ndarray
+    ) -> np.ndarray:
         """Numerically minimize a four-variable scalar objective."""
         vector = np.array(start, dtype=float)
         for _ in range(self.config.max_iterations):
@@ -650,10 +884,30 @@ class AntiferromagneticSolver:
                     gauges[3],
                 )
             )
-            spin_occ_1up = average_ground_state_value(spin_z_operator(self.orbitals, 1), evecs, evals) + 0.5
-            spin_occ_1down = average_ground_state_value(spin_z_operator(self.orbitals, 0), evecs, evals) + 0.5
-            spin_occ_2up = average_ground_state_value(spin_z_operator(self.orbitals, 3), evecs, evals) + 0.5
-            spin_occ_2down = average_ground_state_value(spin_z_operator(self.orbitals, 2), evecs, evals) + 0.5
+            spin_occ_1up = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 1), evecs, evals
+                )
+                + 0.5
+            )
+            spin_occ_1down = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 0), evecs, evals
+                )
+                + 0.5
+            )
+            spin_occ_2up = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 3), evecs, evals
+                )
+                + 0.5
+            )
+            spin_occ_2down = (
+                average_ground_state_value(
+                    spin_z_operator(self.orbitals, 2), evecs, evals
+                )
+                + 0.5
+            )
             return (
                 (spin_occ_1up - occupations[0]) ** 2
                 + (spin_occ_1down - occupations[1]) ** 2
@@ -716,7 +970,9 @@ class AntiferromagneticSolver:
         )
         if derivative == 0:
             return mu_guess
-        return float(mu_guess - (occupation - self.config.target_occupation) / derivative)
+        return float(
+            mu_guess - (occupation - self.config.target_occupation) / derivative
+        )
 
     def solve(self) -> tuple[list[str], np.ndarray]:
         """Run the full interaction sweep for the antiferromagnetic case."""
@@ -748,19 +1004,69 @@ class AntiferromagneticSolver:
         for u_value in make_u_values(self.config):
             for _ in range(self.config.max_iterations):
                 lambda_tilde = lambda_guesses - lambda_shift_guesses
-                f1_up = self.fermionic_up(lambda_tilde[0], lambda_tilde[1], z1_up_guess, z1_down_guess, mu_guess)
-                f1_down = self.fermionic_down(lambda_tilde[0], lambda_tilde[1], z1_up_guess, z1_down_guess, mu_guess)
-                f2_up = self.fermionic_up(lambda_tilde[2], lambda_tilde[3], z2_up_guess, z2_down_guess, mu_guess)
-                f2_down = self.fermionic_down(lambda_tilde[2], lambda_tilde[3], z2_up_guess, z2_down_guess, mu_guess)
+                f1_up = self.fermionic_up(
+                    lambda_tilde[0],
+                    lambda_tilde[1],
+                    z1_up_guess,
+                    z1_down_guess,
+                    mu_guess,
+                )
+                f1_down = self.fermionic_down(
+                    lambda_tilde[0],
+                    lambda_tilde[1],
+                    z1_up_guess,
+                    z1_down_guess,
+                    mu_guess,
+                )
+                f2_up = self.fermionic_up(
+                    lambda_tilde[2],
+                    lambda_tilde[3],
+                    z2_up_guess,
+                    z2_down_guess,
+                    mu_guess,
+                )
+                f2_down = self.fermionic_down(
+                    lambda_tilde[2],
+                    lambda_tilde[3],
+                    z2_up_guess,
+                    z2_down_guess,
+                    mu_guess,
+                )
                 occupations = (f1_up, f1_down, f2_up, f2_down)
                 gauges = tuple(estimate_gauge(value) for value in occupations)
                 h_values = (
-                    self.calculate_h_up(lambda_tilde[0], lambda_tilde[1], z1_up_guess, z1_down_guess, mu_guess),
-                    self.calculate_h_down(lambda_tilde[0], lambda_tilde[1], z1_up_guess, z1_down_guess, mu_guess),
-                    self.calculate_h_up(lambda_tilde[2], lambda_tilde[3], z2_up_guess, z2_down_guess, mu_guess),
-                    self.calculate_h_down(lambda_tilde[2], lambda_tilde[3], z2_up_guess, z2_down_guess, mu_guess),
+                    self.calculate_h_up(
+                        lambda_tilde[0],
+                        lambda_tilde[1],
+                        z1_up_guess,
+                        z1_down_guess,
+                        mu_guess,
+                    ),
+                    self.calculate_h_down(
+                        lambda_tilde[0],
+                        lambda_tilde[1],
+                        z1_up_guess,
+                        z1_down_guess,
+                        mu_guess,
+                    ),
+                    self.calculate_h_up(
+                        lambda_tilde[2],
+                        lambda_tilde[3],
+                        z2_up_guess,
+                        z2_down_guess,
+                        mu_guess,
+                    ),
+                    self.calculate_h_down(
+                        lambda_tilde[2],
+                        lambda_tilde[3],
+                        z2_up_guess,
+                        z2_down_guess,
+                        mu_guess,
+                    ),
                 )
-                lambda_new = self.find_lambdas(lambda_guesses, u_value, h_values, gauges, occupations)
+                lambda_new = self.find_lambdas(
+                    lambda_guesses, u_value, h_values, gauges, occupations
+                )
                 evals, evecs = scipy.linalg.eigh(
                     self.slave_hamiltonian(
                         h_values[0],
@@ -778,20 +1084,40 @@ class AntiferromagneticSolver:
                         gauges[3],
                     )
                 )
-                average_1_up = average_ground_state_value(spin_flip_operator(self.orbitals, 1, gauges[0]), evecs, evals)
-                average_1_down = average_ground_state_value(spin_flip_operator(self.orbitals, 0, gauges[1]), evecs, evals)
-                average_2_up = average_ground_state_value(spin_flip_operator(self.orbitals, 3, gauges[2]), evecs, evals)
-                average_2_down = average_ground_state_value(spin_flip_operator(self.orbitals, 2, gauges[3]), evecs, evals)
+                average_1_up = average_ground_state_value(
+                    spin_flip_operator(self.orbitals, 1, gauges[0]), evecs, evals
+                )
+                average_1_down = average_ground_state_value(
+                    spin_flip_operator(self.orbitals, 0, gauges[1]), evecs, evals
+                )
+                average_2_up = average_ground_state_value(
+                    spin_flip_operator(self.orbitals, 3, gauges[2]), evecs, evals
+                )
+                average_2_down = average_ground_state_value(
+                    spin_flip_operator(self.orbitals, 2, gauges[3]), evecs, evals
+                )
                 z1_up_new = quasiparticle_weight(average_1_up)
                 z1_down_new = quasiparticle_weight(average_1_down)
                 z2_up_new = quasiparticle_weight(average_2_up)
                 z2_down_new = quasiparticle_weight(average_2_down)
                 spin_occ = np.array(
                     [
-                        average_ground_state_value(spin_z_operator(self.orbitals, 1), evecs, evals) + 0.5,
-                        average_ground_state_value(spin_z_operator(self.orbitals, 0), evecs, evals) + 0.5,
-                        average_ground_state_value(spin_z_operator(self.orbitals, 3), evecs, evals) + 0.5,
-                        average_ground_state_value(spin_z_operator(self.orbitals, 2), evecs, evals) + 0.5,
+                        average_ground_state_value(
+                            spin_z_operator(self.orbitals, 1), evecs, evals
+                        )
+                        + 0.5,
+                        average_ground_state_value(
+                            spin_z_operator(self.orbitals, 0), evecs, evals
+                        )
+                        + 0.5,
+                        average_ground_state_value(
+                            spin_z_operator(self.orbitals, 3), evecs, evals
+                        )
+                        + 0.5,
+                        average_ground_state_value(
+                            spin_z_operator(self.orbitals, 2), evecs, evals
+                        )
+                        + 0.5,
                     ]
                 )
                 lambda_shift_new = np.array(
@@ -834,11 +1160,19 @@ class AntiferromagneticSolver:
                     and abs(z1_down_new - z1_down_guess) < self.config.tolerance
                     and abs(z2_up_new - z2_up_guess) < self.config.tolerance
                     and abs(z2_down_new - z2_down_guess) < self.config.tolerance
-                    and np.all(np.abs(lambda_new - lambda_guesses) < self.config.tolerance)
-                    and np.all(np.abs(lambda_shift_new - lambda_shift_guesses) < self.config.tolerance)
-                    and np.all(np.abs(np.array(h_values) - h_old) < self.config.tolerance)
+                    and np.all(
+                        np.abs(lambda_new - lambda_guesses) < self.config.tolerance
+                    )
+                    and np.all(
+                        np.abs(lambda_shift_new - lambda_shift_guesses)
+                        < self.config.tolerance
+                    )
+                    and np.all(
+                        np.abs(np.array(h_values) - h_old) < self.config.tolerance
+                    )
                     and abs(mu_new - mu_guess) < self.config.tolerance
-                    and abs(self.config.target_occupation - sum(occupations)) < self.config.tolerance
+                    and abs(self.config.target_occupation - sum(occupations))
+                    < self.config.tolerance
                     and np.all(np.abs(spin_occ - spin_old) < self.config.tolerance)
                 )
                 if converged:
@@ -880,7 +1214,9 @@ class AntiferromagneticSolver:
                 h_old = alpha * np.array(h_values) + (1.0 - alpha) * h_old
                 spin_old = alpha * spin_occ + (1.0 - alpha) * spin_old
                 lambda_guesses = alpha * lambda_new + (1.0 - alpha) * lambda_guesses
-                lambda_shift_guesses = alpha * lambda_shift_new + (1.0 - alpha) * lambda_shift_guesses
+                lambda_shift_guesses = (
+                    alpha * lambda_shift_new + (1.0 - alpha) * lambda_shift_guesses
+                )
                 z1_up_guess = alpha * z1_up_new + (1.0 - alpha) * z1_up_guess
                 z1_down_guess = alpha * z1_down_new + (1.0 - alpha) * z1_down_guess
                 z2_up_guess = alpha * z2_up_new + (1.0 - alpha) * z2_up_guess
@@ -926,16 +1262,31 @@ class AntiferromagneticSolver:
 def run_simulation(config: RunnerConfig) -> RunResult:
     """Execute one validated built-in simulation and return its numerical table."""
     start = perf_counter()
-    solver = ParamagneticSolver(config) if config.mode == "paramagnetic" else AntiferromagneticSolver(config)
+    solver = (
+        ParamagneticSolver(config)
+        if config.mode == "paramagnetic"
+        else AntiferromagneticSolver(config)
+    )
     headers, rows = solver.solve()
-    return RunResult(config=config, headers=headers, rows=rows, elapsed_seconds=perf_counter() - start)
+    return RunResult(
+        config=config,
+        headers=headers,
+        rows=rows,
+        elapsed_seconds=perf_counter() - start,
+    )
 
 
 def parse_args() -> argparse.Namespace:
     """Parse the package CLI arguments."""
-    parser = argparse.ArgumentParser(description="Run pySSMF built-in Bethe lattice simulations.")
-    parser.add_argument("config", nargs="?", help="Optional path to a YAML config file.")
-    parser.add_argument("--output", help="Optional output path that overrides the config value.")
+    parser = argparse.ArgumentParser(
+        description="Run pySSMF built-in Bethe lattice simulations."
+    )
+    parser.add_argument(
+        "config", nargs="?", help="Optional path to a YAML config file."
+    )
+    parser.add_argument(
+        "--output", help="Optional output path that overrides the config value."
+    )
     return parser.parse_args()
 
 

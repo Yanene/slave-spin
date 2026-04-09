@@ -8,7 +8,6 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, model_validator
 
-
 Mode = Literal["paramagnetic", "af"]
 
 
@@ -47,7 +46,7 @@ class RunnerConfig(BaseModel):
     lambda_2_down_shift_guess: float = 3.16
 
     @model_validator(mode="after")
-    def validate_ranges(self) -> "RunnerConfig":
+    def validate_ranges(self) -> RunnerConfig:
         """Ensure the numerical setup is coherent before the solver starts."""
         if self.u_step <= 0:
             raise ValueError("u_step must be strictly positive.")

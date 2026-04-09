@@ -9,7 +9,6 @@ from pydantic import ValidationError
 from pyssmf.config import build_default_config, load_config
 from pyssmf.runner import run_simulation
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
