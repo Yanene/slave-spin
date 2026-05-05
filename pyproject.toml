@@ -57,6 +57,9 @@ docu = [
   "mkdocstrings-python",
 ]
 
+[project.scripts]
+pyssmf = "pyssmf.cli:main"
+
 [tool.uv]
 build-constraint-dependencies = ["wheel<0.46"]
 
