@@ -7,6 +7,8 @@ from pydantic import ValidationError
 
 from pyssmf.config import RunnerConfig, build_default_config, load_config
 
+TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
+
 
 def test_runner_config_defaults() -> None:
     config = RunnerConfig()
@@ -68,24 +70,8 @@ def test_load_config_without_path_returns_builtin_default() -> None:
     assert config == build_default_config()
 
 
-def test_load_config_from_yaml_file(tmp_path: Path) -> None:
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text(
-        "\n".join(
-            [
-                "magnetic_mode: antiferromagnetic",
-                "beta: 1234.5",
-                "u_start: 0.5",
-                "u_stop: 1.5",
-                "u_step: 0.25",
-                "output_path: custom-results.dat",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-
-    config = load_config(config_path)
+def test_load_config_from_yaml_file() -> None:
+    config = load_config(TEST_DATA_DIR / "example_config.yaml")
 
     assert config.magnetic_mode == "antiferromagnetic"
     assert config.beta == 1234.5
@@ -95,11 +81,8 @@ def test_load_config_from_yaml_file(tmp_path: Path) -> None:
     assert config.output_path == "custom-results.dat"
 
 
-def test_load_config_empty_yaml_uses_model_defaults(tmp_path: Path) -> None:
-    config_path = tmp_path / "empty.yaml"
-    config_path.write_text("", encoding="utf-8")
-
-    config = load_config(config_path)
+def test_load_config_empty_yaml_uses_model_defaults() -> None:
+    config = load_config(TEST_DATA_DIR / "example_config_empty.yaml")
 
     assert config == RunnerConfig()
     assert config.output_path is None

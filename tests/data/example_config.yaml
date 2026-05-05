@@ -1,0 +1,6 @@
+magnetic_mode: antiferromagnetic
+beta: 1234.5
+u_start: 0.5
+u_stop: 1.5
+u_step: 0.25
+output_path: custom-results.dat
