@@ -4,72 +4,80 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-LATTICE_TYPES = Literal["bethe"]  # supported lattice type
-MAGNETIC_MODES = Literal["paramagnetic", "antiferromagnetic"]  # supported magnetic mode
+# supported types and modes
+LATTICE_TYPES = Literal["bethe"]
+MAGNETIC_MODES = Literal["paramagnetic", "antiferromagnetic"]
 
 
-class RunnerConfig(BaseModel):
-    """Validated configuration for the built-in Bethe lattice runners."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    # Lattice information
-    magnetic_mode: MAGNETIC_MODES = Field(
-        default="paramagnetic", description="The magnetic mode of the simulation."
-    )
-    lattice: LATTICE_TYPES = Field(
-        default="bethe", description="The lattice type to be used in the simulation."
+class LatticeConfig(BaseModel):
+    type: LATTICE_TYPES = Field(
+        "bethe", description="The type of lattice to be used in the simulation."
     )
     orbitals: int = Field(
-        default=2, description="The number of orbitals in the tight-binding model."
+        2,
+        gt=0,
+        le=10,
+        description="The number of orbitals in the tight-binding model. Maximum allowed is 10.",
     )
     hopping: float = Field(
-        default=1.0,
-        description="The hopping parameter (t) for the tight-binding model.",
+        1.0, gt=0, description="The hopping parameter (t) for the tight-binding model."
     )
 
-    # Numerical parameters
+
+class NumericalConfig(BaseModel):
     beta: float = Field(
-        default=1000.0,
+        1000.0,
+        gt=0,
         description="The inverse temperature (beta) for the Fermi-Dirac distribution.",
     )
     tolerance: float = Field(
-        default=1e-4,
+        1e-4,
+        gt=0,
         description="The convergence tolerance for the self-consistent loop.",
     )
     integration_points: int = Field(
-        default=2000,
+        2000,
+        ge=100,
         description="The number of points to use in numerical integration.",
     )
     mixing: float = Field(
-        default=0.1, description="The mixing parameter for the self-consistent loop."
+        0.1,
+        gt=0,
+        le=1,
+        description="The mixing parameter for the self-consistent loop.",
     )
     max_iterations: int = Field(
-        default=5000,
+        5000,
+        gt=0,
         description="The maximum number of iterations for the self-consistent loop.",
     )
 
-    # Simulation parameters
-    target_occupation: float = Field(
-        default=2.0, description="The target occupation number for the simulation."
+
+class RangeSweep(BaseModel):
+    start: float = Field(..., description="The starting value of the range sweep.")
+    stop: float = Field(..., description="The stopping value of the range sweep.")
+    step: float = Field(0.1, gt=0, description="The step size for the range sweep.")
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.stop < self.start:
+            raise ValueError("stop must be >= start")
+        return self
+
+
+class SweepConfig(BaseModel):
+    u_interaction: RangeSweep = Field(
+        default_factory=lambda: RangeSweep(start=0.0, stop=4.0, step=0.1),
+        description="The range sweep configuration for the interaction strength (U).",
     )
-    u_start: float = Field(
+    hund_coupling: RangeSweep | float = Field(
         default=0.0,
-        description="The starting value of the interaction strength (U) for the simulation.",
-    )
-    u_stop: float = Field(
-        default=4.0,
-        description="The stopping value of the interaction strength (U) for the simulation.",
-    )
-    u_step: float = Field(
-        default=0.1,
-        description="The step size for the interaction strength (U) in the simulation.",
-    )
-    hund_coupling: float = Field(
-        default=0.0, description="The Hund's coupling constant for the simulation."
+        description="The range sweep configuration for the Hund's coupling constant, or a fixed value if not sweeping.",
     )
 
-    # SSMF solver parameters
+
+class SolverGuesses(BaseModel):
+    # ! soon to be deprecated
     mu_guess: float = Field(
         default=0.0,
         description="Initial guess for the chemical potential (mu) in the SSMF solver.",
@@ -122,22 +130,27 @@ class RunnerConfig(BaseModel):
         description="Initial guess for the shifted lambda parameter of orbital 2 with spin down in the SSMF solver.",
     )
 
-    output_path: str | None = None
 
-    @model_validator(mode="after")
-    def validate_ranges(self):
-        """Ensure the numerical setup is coherent before the solver starts."""
-        if self.u_step <= 0:
-            raise ValueError("u_step must be strictly positive.")
-        if self.u_stop < self.u_start:
-            raise ValueError("u_stop must be greater than or equal to u_start.")
-        if self.integration_points < 100:
-            raise ValueError("integration_points must be at least 100.")
-        if not 0 < self.mixing <= 1:
-            raise ValueError("mixing must be in the interval (0, 1].")
-        if self.max_iterations <= 0:
-            raise ValueError("max_iterations must be strictly positive.")
-        return self
+class RunnerConfig(BaseModel):
+    """Validated configuration for the built-in Bethe lattice runners."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    magnetic_mode: MAGNETIC_MODES = Field(
+        default="paramagnetic", description="The magnetic mode of the simulation."
+    )
+    lattice: LatticeConfig = Field(default_factory=LatticeConfig)
+    numerical: NumericalConfig = Field(default_factory=NumericalConfig)
+    # interaction sweep parameters
+    sweep: SweepConfig = Field(default_factory=SweepConfig)
+
+    # SSMF solver guesses (SOON TO BE DEPRECATED)
+    solver_guesses: SolverGuesses | None = None
+
+    target_occupation: float = Field(
+        default=2.0, description="The target occupation number for the simulation."
+    )
+    output_path: str | None = None
 
 
 def build_default_config(
@@ -156,14 +169,17 @@ def build_default_config(
     if magnetic_mode == "paramagnetic":
         return RunnerConfig(
             magnetic_mode="paramagnetic",
-            beta=1000.0,
+            numerical=NumericalConfig(beta=1000.0),
             output_path="results_bethe_2orbital_para.dat",
         )
 
     return RunnerConfig(
         magnetic_mode="antiferromagnetic",
-        beta=10000.0,
-        u_stop=1.0,
+        numerical=NumericalConfig(beta=10000.0),
+        sweep=SweepConfig(
+            u_interaction=RangeSweep(start=0.0, stop=1.0, step=0.1),
+            hund_coupling=0.0,
+        ),
         output_path="results_bethe_2orbital_af.dat",
     )
 
