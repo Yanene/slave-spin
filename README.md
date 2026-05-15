@@ -27,7 +27,7 @@ cd pySSMF
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -e '.[dev,docu]'
+pip install -e '.[dev]'
 ```
 
 **Note**: The editable install (`-e`) reflects local code changes immediately.
@@ -42,7 +42,7 @@ Open the Command Prompt:
 python3 -m venv .venv
 .\.venv\Scripts\activate
 pip install --upgrade pip
-pip install -e '.[dev,docu]'
+pip install -e '.[dev]'
 ```
 
 ### Option B: Conda Environment (both Linux and Windows)
@@ -51,7 +51,7 @@ pip install -e '.[dev,docu]'
 conda create -n pyssmf python=3.12 -y
 conda activate pyssmf
 pip install --upgrade pip
-pip install -e '.[dev,docu]'
+pip install -e '.[dev]'
 ```
 
 ### Verify the Setup
@@ -65,7 +65,7 @@ pytest tests/
 
 ### Install and Manage with `uv`
 
-For faster setup, we recommend using [`uv`](https://docs.astral.sh/uv/).
+We highly recommend using [`uv`](https://docs.astral.sh/uv/).
 
 #### Install `uv`
 
@@ -114,7 +114,6 @@ uv run pytest tests
 ```bash
 uv add <package>
 uv add --dev <package>
-uv add --docu <package>
 uv lock
 uv sync
 ```

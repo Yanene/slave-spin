@@ -27,7 +27,10 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 dependencies = [
+  "numpy",
+  "scipy",
   "pydantic~=2.10.5",
+  "pyyaml",
   "h5py~=3.12.1",
   "structlog==24.4.0",
 ]
@@ -46,13 +49,11 @@ dev = [
   "pytest-cov",
   "pre-commit",
   "detect-secrets",
+  "zensical>=0.0.41",
 ]
-docu = [
-  "mkdocs-material",
-  "mkdocs-click",
-  "mkdocstrings",
-  "mkdocstrings-python",
-]
+
+[project.scripts]
+pyssmf = "pyssmf.cli:main"
 
 [tool.uv]
 build-constraint-dependencies = ["wheel<0.46"]
