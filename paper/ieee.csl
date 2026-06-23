@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" version="1.0" class="in-text">
+  <info>
+    <title>IEEE (Simplified)</title>
+    <id>http://www.zotero.org/styles/ieee-simple</id>
+    <link href="http://www.zotero.org/styles/ieee" rel="template"/>
+    <author>
+      <name>Generated simplified version</name>
+    </author>
+    <category citation-format="numeric"/>
+    <updated>2026-01-01</updated>
+  </info>
+
+  <!-- Citation style: numbers in brackets [1] -->
+  <citation collapse="citation-number">
+    <sort>
+      <key variable="citation-number"/>
+    </sort>
+    <layout prefix="[" suffix="]" delimiter=", ">
+      <text variable="citation-number"/>
+    </layout>
+  </citation>
+
+  <!-- Bibliography style -->
+  <bibliography>
+    <layout>
+      <text variable="citation-number" prefix="[" suffix="] "/>
+      <names variable="author">
+        <name and="text" initialize-with=". " delimiter=", "/>
+      </names>
+      <text variable="title" prefix=", &quot;" suffix="&quot;"/>
+      <text variable="container-title" prefix=", " suffix=""/>
+      <text variable="volume" prefix=", vol. "/>
+      <text variable="page" prefix=", pp. "/>
+      <date variable="issued">
+        <date-part name="year" prefix=" (" suffix=")"/>
+      </date>
+    </layout>
+  </bibliography>
+
+</style>
